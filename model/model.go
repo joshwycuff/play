@@ -1,9 +1,6 @@
 package model
 
 import (
-	"bytes"
-	"os/exec"
-
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/joshwycuff/play/model/command"
@@ -53,14 +50,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
-	switch msg.String() {
-	case "ctrl+c", "esc":
+	key := msg.String()
+	if key == "ctrl+c" || key == "esc" {
 		return m, tea.Quit
-	case "enter":
+	} else if key == "enter" {
 		return m, m.handleRun()
-	case "tab":
+	} else if key == "tab" {
 		return m, m.rotateFocus()
-	default:
+	} else if m.focus == FocusCommand && key == "up" {
+		m.handleHistoryPrev()
+	} else if m.focus == FocusCommand && key == "down" {
+		m.handleHistoryNext()
+	} else {
 		m.bubbleDownFocus(msg)
 	}
 	return m, tea.Batch(cmds...)
@@ -97,45 +98,60 @@ func (m *Model) bubbleDown(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *Model) bubbleDownFocus(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m.focus {
-	case 1:
+	case FocusCommand:
 		return m, m.command.Update(msg)
-	case 2:
+	case FocusInput:
 		return m, m.input.Update(msg)
-	case 3:
+	case FocusOutput:
 		return m, m.output.Update(msg)
 	}
 	return nil, nil
 }
 
 func (m *Model) handleRun() tea.Cmd {
-	cmd := exec.Command("sh", "-c", m.command.Content())
 
-	// Get the command's stdin pipe
-	stdin, err := cmd.StdinPipe()
+	historyEntry, err := run(m.command.Content(), m.input.Content())
 	if err != nil {
-		return nil
-	}
-
-	// Provide input to the command
-	go func() {
-		defer stdin.Close()
-		stdin.Write([]byte(m.input.Content()))
-	}()
-
-	// Capture output
-	var out bytes.Buffer
-	cmd.Stdout = &out
-
-	// Run the command
-	if err := cmd.Run(); err != nil {
 		m.output.Failure()
 		m.output.SetContent(err.Error())
 		return nil
 	}
 
-	m.output.Success()
-	m.output.SetContent(out.String())
+	if historyEntry.result.ExitStatus == 0 {
+		m.output.Success()
+		m.output.SetContent(historyEntry.result.Stdout)
+	} else {
+		m.output.Failure()
+		m.output.SetContent(historyEntry.result.Stderr)
+	}
+
+	PushHistoryEntry(historyEntry)
+
 	return nil
+}
+
+func (m *Model) handleHistoryPrev() {
+	historyEntry := GetPreviousHistoryEntry()
+	m.command.SetContent(historyEntry.command)
+	if historyEntry.result.ExitStatus == 0 {
+		m.output.Success()
+		m.output.SetContent(historyEntry.result.Stdout)
+	} else {
+		m.output.Failure()
+		m.output.SetContent(historyEntry.result.Stderr)
+	}
+}
+
+func (m *Model) handleHistoryNext() {
+	historyEntry := GetNextHistoryEntry()
+	m.command.SetContent(historyEntry.command)
+	if historyEntry.result.ExitStatus == 0 {
+		m.output.Success()
+		m.output.SetContent(historyEntry.result.Stdout)
+	} else {
+		m.output.Failure()
+		m.output.SetContent(historyEntry.result.Stderr)
+	}
 }
 
 func (m Model) View() string {
@@ -151,18 +167,18 @@ func (m Model) View() string {
 
 func (m *Model) rotateFocus() tea.Cmd {
 	switch m.focus {
-	case 1:
+	case FocusCommand:
 		m.command.Unfocus()
 		m.input.Focus()
-		m.focus = 2
-	case 2:
+		m.focus = FocusInput
+	case FocusInput:
 		m.input.Unfocus()
 		m.output.Focus()
-		m.focus = 3
-	case 3:
+		m.focus = FocusOutput
+	case FocusOutput:
 		m.output.Unfocus()
 		m.command.Focus()
-		m.focus = 1
+		m.focus = FocusCommand
 	}
 	return nil
 }

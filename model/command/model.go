@@ -49,10 +49,14 @@ func (m *Model) Content() string {
 	return m.textInput.Value()
 }
 
+func (m *Model) SetContent(content string) {
+	m.textInput.SetValue(content)
+}
+
 func (m *Model) Focus() {
-	m.container = m.container.BorderForeground(lipgloss.Color(common.BLUE))
+	m.container = m.container.BorderForeground(common.CatppuccinMocha.Primary)
 }
 
 func (m *Model) Unfocus() {
-	m.container = m.container.BorderForeground(lipgloss.Color(common.GREY))
+	m.container = m.container.BorderForeground(common.CatppuccinMocha.Inactive)
 }

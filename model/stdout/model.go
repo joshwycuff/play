@@ -49,11 +49,11 @@ func (m *Model) bubbleDown(msg tea.Msg) tea.Cmd {
 }
 
 func (m *Model) View() string {
-	color := common.GREY
+	color := common.CatppuccinMocha.Inactive
 	if m.failure {
-		color = common.RED
+		color = common.CatppuccinMocha.Error
 	} else if m.focus {
-		color = common.BLUE
+		color = common.CatppuccinMocha.Primary
 	}
 	return m.container.BorderForeground(color).Render(m.viewPort.View())
 }

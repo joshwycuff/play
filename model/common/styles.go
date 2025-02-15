@@ -5,9 +5,5 @@ import "github.com/charmbracelet/lipgloss"
 func GetRoundedBorder() lipgloss.Style {
 	return lipgloss.NewStyle().
 		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color(GREY))
+		BorderForeground(CatppuccinMocha.Inactive)
 }
-
-var RoundedBorder = lipgloss.NewStyle().
-	BorderStyle(lipgloss.RoundedBorder()).
-	BorderForeground(lipgloss.Color(GREY))

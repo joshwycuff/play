@@ -509,3 +509,5 @@ func customColorOrDefault(color string, def lipgloss.Color) lipgloss.Color {
 
 	return lipgloss.Color(color)
 }
+
+var CatppuccinMocha, _ = GetTheme("catppuccin-mocha", make(map[string]string))
