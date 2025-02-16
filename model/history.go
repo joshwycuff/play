@@ -1,66 +1,117 @@
 package model
 
-var index = -1
+import "github.com/joshwycuff/play/util"
 
-type Result struct {
+type HistoryData struct {
+	Command    string
+	Stdin      *string
+	Stdout     *string
+	Stderr     *string
 	ExitStatus int
-	Stdout     string
-	Stderr     string
 }
 
-type HistoryEntry struct {
-	command string
-	result  Result
-}
-
-var history = []HistoryEntry{}
-
-func PushHistoryEntry(entry HistoryEntry) int {
-	if len(history) > 0 && entry == history[len(history)-1] {
-		return index
+func NewHistoryData() *HistoryData {
+	data := HistoryData{
+		Command:    "",
+		Stdin:      util.P(""),
+		Stdout:     util.P(""),
+		Stderr:     util.P(""),
+		ExitStatus: 0,
 	}
-	history = append(history, entry)
-	index = len(history) - 1
-	return index
+	return &data
 }
 
-func GetPreviousHistoryEntry() HistoryEntry {
-	if len(history) == 0 {
-		return HistoryEntry{}
+type HistoryNode = Node[HistoryData]
+
+type History struct {
+	root    *HistoryNode
+	current *HistoryNode
+	nodes   []*HistoryNode
+}
+
+func NewHistory(rootCommand string, rootStdout *string) History {
+	rootEntry := HistoryData{Command: rootCommand, Stdin: util.P(""), Stdout: rootStdout, Stderr: util.P("")}
+	rootNode := NewRootNode(&rootEntry)
+	childEntry := HistoryData{Command: "", Stdin: rootStdout, Stdout: util.P(""), Stderr: util.P("")}
+	childNode := rootNode.AddChild(&childEntry)
+	return History{
+		root:    &rootNode,
+		current: &childNode,
+		nodes:   []*HistoryNode{&rootNode, &childNode},
 	}
-	index = clamp(index-1, 0, len(history)-1)
-	return history[index]
 }
 
-func GetHistoryEntry() HistoryEntry {
-	if len(history) == 0 {
-		return HistoryEntry{}
+func (h *History) GetCurrent() *HistoryNode {
+	return h.current
+}
+
+func (h *History) SetCurrent(node *HistoryNode) {
+	h.current = node
+}
+
+func (h *History) AddChild(entry *HistoryData) *HistoryNode {
+	child := h.current.AddChild(entry)
+	h.nodes = append(h.nodes, &child)
+	return &child
+}
+
+func (h *History) AddSibling(entry *HistoryData) *HistoryNode {
+	sibling := h.current.Parent.AddChild(entry)
+	h.nodes = append(h.nodes, &sibling)
+	return &sibling
+}
+
+func (h *History) GetParent() *HistoryNode {
+	if h.current.Equals(h.root) {
+		return h.current
 	}
-	return history[clamp(index, 0, len(history)-1)]
+
+	return h.current.Parent
 }
 
-func GetNextHistoryEntry() HistoryEntry {
-	if len(history) == 0 {
-		return HistoryEntry{}
+func (h *History) GetLatestChild() *HistoryNode {
+	if len(h.current.Children) == 0 {
+		return h.current
 	}
-	index = clamp(index+1, 0, len(history)-1)
-	return history[index]
+
+	return h.current.Children[len(h.current.Children)-1]
 }
 
-func clamp(a, low, high int) int {
-	return min(max(a, low), high)
-}
-
-func min(a, b int) int {
-	if a <= b {
-		return a
+func (h *History) GetPrevSibling() *HistoryNode {
+	if h.current.Equals(h.root) {
+		return h.root
 	}
-	return b
+
+	parent := h.current.Parent
+	index := findIndexOfHistoryNode(parent.Children, h.current)
+
+	if index == 0 {
+		return h.current
+	}
+
+	return parent.Children[index-1]
 }
 
-func max(a, b int) int {
-	if a >= b {
-		return a
+func (h *History) GetNextSibling() *HistoryNode {
+	if h.current.Equals(h.root) {
+		return h.root
 	}
-	return b
+
+	parent := h.current.Parent
+	index := findIndexOfHistoryNode(parent.Children, h.current)
+
+	if index == len(parent.Children)-1 {
+		return h.current
+	}
+
+	return parent.Children[index+1]
+}
+
+func findIndexOfHistoryNode(nodes []*HistoryNode, node *HistoryNode) int {
+	for i, n := range nodes {
+		if n.Equals(node) {
+			return i
+		}
+	}
+	return -1
 }

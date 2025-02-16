@@ -6,6 +6,7 @@ package cmd
 import (
 	"io"
 	"os"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/joshwycuff/play/model"
@@ -26,13 +27,14 @@ to quickly create a Cobra application.`,
 	// has an action associated with it:
 	// Run: func(cmd *cobra.Command, args []string) { },
 	RunE: func(cmd *cobra.Command, args []string) error {
-		data, err := io.ReadAll(os.Stdin)
+		stdinBytes, err := io.ReadAll(os.Stdin)
 		if err != nil {
 			return err
 		}
+		stdin := string(stdinBytes)
 
 		p := tea.NewProgram(
-			model.New(string(data)),
+			model.New(strings.Join(args, " "), &stdin),
 		)
 
 		if _, err := p.Run(); err != nil {

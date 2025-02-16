@@ -45,12 +45,13 @@ func (m *Model) View() string {
 	return m.container.Render(m.textInput.View())
 }
 
-func (m *Model) Content() string {
+func (m *Model) GetContent() string {
 	return m.textInput.Value()
 }
 
 func (m *Model) SetContent(content string) {
 	m.textInput.SetValue(content)
+	m.textInput.SetCursor(len(content))
 }
 
 func (m *Model) Focus() {
@@ -59,4 +60,12 @@ func (m *Model) Focus() {
 
 func (m *Model) Unfocus() {
 	m.container = m.container.BorderForeground(common.CatppuccinMocha.Inactive)
+}
+
+func (m *Model) SetInsertMode() {
+
+}
+
+func (m *Model) SetNormalMode() {
+
 }

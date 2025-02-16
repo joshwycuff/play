@@ -10,6 +10,7 @@ import (
 type Model struct {
 	container lipgloss.Style
 	viewPort  viewport.Model
+	content   *string
 	focus     bool
 	failure   bool
 }
@@ -58,8 +59,13 @@ func (m *Model) View() string {
 	return m.container.BorderForeground(color).Render(m.viewPort.View())
 }
 
-func (m *Model) SetContent(content string) {
-	m.viewPort.SetContent(content)
+func (m *Model) GetContent() *string {
+	return m.content
+}
+
+func (m *Model) SetContent(content *string) {
+	m.content = content
+	m.viewPort.SetContent(*content)
 }
 
 func (m *Model) Focus() {

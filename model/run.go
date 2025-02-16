@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"os/exec"
 	"syscall"
+
+	"github.com/joshwycuff/play/util"
 )
 
-func run(command string, stdin string) (HistoryEntry, error) {
-	historyEntry := HistoryEntry{command: command, result: Result{}}
+func run(command string, stdin *string) (HistoryData, error) {
+	historyEntry := HistoryData{Command: command, Stdin: stdin}
 
 	cmd := exec.Command("sh", "-c", command)
 
@@ -20,7 +22,7 @@ func run(command string, stdin string) (HistoryEntry, error) {
 	// Provide input to the command
 	go func() {
 		defer stdinPipe.Close()
-		stdinPipe.Write([]byte(stdin))
+		stdinPipe.Write([]byte(*stdin))
 	}()
 
 	// Capture output
@@ -33,22 +35,17 @@ func run(command string, stdin string) (HistoryEntry, error) {
 	if err != nil {
 		exitErr, ok := err.(*exec.ExitError)
 		if ok {
+			historyEntry.Stdout = util.P(stdout.String())
+			historyEntry.Stderr = util.P(stderr.String())
 			status := exitErr.Sys().(syscall.WaitStatus)
-			historyEntry.result.ExitStatus = status.ExitStatus()
-			historyEntry.result.Stdout = stdout.String()
-			historyEntry.result.Stderr = stderr.String()
+			historyEntry.ExitStatus = status.ExitStatus()
 		} else {
 			return historyEntry, err
 		}
-		// m.output.Failure()
-		// m.output.SetContent(err.Error())
 	} else {
-		historyEntry.result.ExitStatus = 0
-		historyEntry.result.Stdout = stdout.String()
-		historyEntry.result.Stderr = stderr.String()
-
-		// m.output.Success()
-		// m.output.SetContent(stdout.String())
+		historyEntry.Stdout = util.P(stdout.String())
+		historyEntry.Stderr = util.P(stderr.String())
+		historyEntry.ExitStatus = 0
 	}
 
 	return historyEntry, nil

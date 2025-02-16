@@ -20,6 +20,6 @@ func init() {
 	logger = log.New(f, "DEBUG: ", log.LstdFlags)
 }
 
-func Debug(msg string) {
-	logger.Println(msg)
+func Debug(msg ...any) {
+	logger.Println(msg...)
 }

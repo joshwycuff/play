@@ -9,14 +9,14 @@ import (
 
 type Model struct {
 	container lipgloss.Style
-	content   string
+	content   *string
 	viewPort  viewport.Model
 }
 
-func New(content string) Model {
+func New(content *string) Model {
 	container := common.GetRoundedBorder()
 	viewPort := viewport.New(-1, -1)
-	viewPort.SetContent(content)
+	viewPort.SetContent(*content)
 	return Model{container: container, content: content, viewPort: viewPort}
 }
 
@@ -52,8 +52,13 @@ func (m *Model) View() string {
 	return m.container.Render(m.viewPort.View())
 }
 
-func (m *Model) Content() string {
+func (m *Model) GetContent() *string {
 	return m.content
+}
+
+func (m *Model) SetContent(content *string) {
+	m.content = content
+	m.viewPort.SetContent(*content)
 }
 
 func (m *Model) Focus() {
