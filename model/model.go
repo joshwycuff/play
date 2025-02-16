@@ -11,29 +11,33 @@ import (
 )
 
 type Model struct {
-	ready   bool
-	height  int
-	width   int
-	focus   int
-	command command.Model
-	input   stdin.Model
-	output  stdout.Model
-	history History
-	keyMap  KeyMap
+	ready         bool
+	height        int
+	width         int
+	focus         int
+	command       command.Model
+	input         stdin.Model
+	output        stdout.Model
+	inputVisible  bool
+	outputVisible bool
+	history       History
+	keyMap        KeyMap
 }
 
 func New(rootCommand string, rootStdout *string) Model {
 	history := NewHistory(rootCommand, rootStdout)
 	model := Model{
-		ready:   false,
-		height:  -1,
-		width:   -1,
-		focus:   1,
-		command: command.New(),
-		input:   stdin.New(rootStdout),
-		output:  stdout.New(),
-		history: history,
-		keyMap:  GetDefaultKeyMap(),
+		ready:         false,
+		height:        -1,
+		width:         -1,
+		focus:         1,
+		command:       command.New(),
+		input:         stdin.New(rootStdout),
+		output:        stdout.New(),
+		inputVisible:  true,
+		outputVisible: true,
+		history:       history,
+		keyMap:        GetDefaultKeyMap(),
 	}
 	model.command.Focus()
 	return model
@@ -71,6 +75,10 @@ func (m *Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.navigateHistoryToParent()
 	} else if key.Matches(msg, m.keyMap.NavigateToLatestChild) {
 		m.navigateHistoryToLatestChild()
+	} else if key.Matches(msg, m.keyMap.ToggleInputVisibility) {
+		m.inputVisible = !m.inputVisible
+	} else if key.Matches(msg, m.keyMap.ToggleOutputVisibility) {
+		m.outputVisible = !m.outputVisible
 	} else {
 		m.bubbleDownFocus(msg)
 	}
@@ -176,10 +184,17 @@ func (m Model) View() string {
 	if !m.ready {
 		return "..."
 	}
+	var panes []string
+	if m.inputVisible {
+		panes = append(panes, m.input.View())
+	}
+	if m.outputVisible {
+		panes = append(panes, m.output.View())
+	}
 	return lipgloss.JoinVertical(
 		lipgloss.Center,
 		m.command.View(),
-		lipgloss.JoinHorizontal(lipgloss.Left, m.input.View(), m.output.View()),
+		lipgloss.JoinHorizontal(lipgloss.Left, panes...),
 	)
 }
 

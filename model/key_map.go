@@ -10,6 +10,8 @@ type KeyMap struct {
 	NavigateToPreviousSibling key.Binding
 	NavigateToNextSibling     key.Binding
 	NavigateToLatestChild     key.Binding
+	ToggleInputVisibility     key.Binding
+	ToggleOutputVisibility    key.Binding
 }
 
 func GetDefaultKeyMap() KeyMap {
@@ -21,5 +23,7 @@ func GetDefaultKeyMap() KeyMap {
 		NavigateToNextSibling:     key.NewBinding(key.WithKeys("alt+j", "down")),
 		NavigateToPreviousSibling: key.NewBinding(key.WithKeys("alt+k", "up")),
 		NavigateToLatestChild:     key.NewBinding(key.WithKeys("alt+l", "alt+.")),
+		ToggleInputVisibility:     key.NewBinding(key.WithKeys("alt+i")),
+		ToggleOutputVisibility:    key.NewBinding(key.WithKeys("alt+o")),
 	}
 }
